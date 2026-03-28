@@ -6,8 +6,8 @@
   ],
   "check_interval_minutes": 20,
   "telegram": {
-    "token": "DIN_BOT_TOKEN_HÄR",
-    "chat_id": "DITT_CHAT_ID_HÄR"
+    "token": "",
+    "chat_id": ""
   },
   "sites": {
     "blocket": true,

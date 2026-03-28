@@ -1,0 +1,46 @@
+name: Ad Monitor
+
+on:
+  schedule:
+    # Körs var 20:e minut dygnet runt
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    # Möjliggör manuell körning från GitHub-gränssnittet
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Behövs för att committa seen_ads.json tillbaka
+
+    steps:
+      - name: Checka ut repo
+        uses: actions/checkout@v4
+        with:
+          # Hämta hela historiken så git-commit fungerar
+          fetch-depth: 1
+
+      - name: Sätt upp Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installera beroenden
+        run: pip install -r requirements.txt
+
+      - name: Kör annonsbevakning
+        env:
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_ONCE: "true"
+        run: python monitor.py
+
+      - name: Spara seen_ads.json tillbaka till repot
+        run: |
+          git config user.name  "Ad Monitor Bot"
+          git config user.email "adhunter-bot@users.noreply.github.com"
+          git add seen_ads.json
+          # Committa bara om filen faktiskt ändrades
+          git diff --cached --quiet || git commit -m "chore: uppdatera seen_ads [skip ci]"
+          git push
