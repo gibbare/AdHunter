@@ -1,47 +1,43 @@
 """
-Notifier – skickar meddelanden via Telegram.
+Notifier – skickar web push via den befintliga Cloudflare Worker-endpointen /notify.
 
-Instruktioner för att sätta upp:
-1. Öppna Telegram och sök efter "@BotFather"
-2. Skicka /newbot och följ instruktionerna → du får ett TOKEN
-3. Starta en chatt med din bot (sök på botnamnet och klicka Start)
-4. Hämta ditt chat_id:
-   Öppna https://api.telegram.org/bot<DIN_TOKEN>/getUpdates i webbläsaren
-   Skicka ett meddelande till boten och ladda om sidan.
-   Leta efter "id" under "chat" – det är ditt chat_id.
-5. Fyll i token och chat_id i config.json
+Miljövariabler (sätts i Railway):
+  WORKER_URL     – t.ex. https://aurora-push.gibbare.workers.dev
+  NOTIFY_SECRET  – samma hemliga nyckel som i Cloudflare Worker (NOTIFY_SECRET)
 """
+import os
 import requests
 
+WORKER_URL    = os.environ.get("WORKER_URL", "").rstrip("/")
+NOTIFY_SECRET = os.environ.get("NOTIFY_SECRET", "")
 
-def send_telegram(token: str, chat_id: str, message: str) -> bool:
-    """Skickar ett meddelande via Telegram Bot API."""
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": message,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": False,
-    }
+
+def send_push(title: str, body: str, tag: str, url: str) -> bool:
+    """Skickar en push-notis via Cloudflare Worker /notify."""
+    if not WORKER_URL or not NOTIFY_SECRET:
+        print("[Notifier] WORKER_URL eller NOTIFY_SECRET saknas – ingen notis skickad.")
+        return False
     try:
-        resp = requests.post(url, json=payload, timeout=10)
+        resp = requests.post(
+            f"{WORKER_URL}/notify",
+            json={"secret": NOTIFY_SECRET, "title": title, "body": body, "tag": tag, "url": url},
+            timeout=10,
+        )
         resp.raise_for_status()
+        data = resp.json()
+        print(f"[Notifier] Push skickad till {data.get('sent', '?')} prenumerant(er).")
         return True
     except Exception as e:
-        print(f"[Notifier] Telegram-fel: {e}")
+        print(f"[Notifier] Fel: {e}")
         return False
 
 
-def format_ad(ad: dict, search_term: str) -> str:
-    """Formaterar en annons till ett Telegram-meddelande."""
-    lines = [
-        f"🔔 <b>Ny annons – {ad['site']}</b>",
-        f"🔍 Sökning: <i>{search_term}</i>",
-        f"📦 {ad['title']}",
-    ]
+def format_and_send(ad: dict, search_term: str) -> bool:
+    title = f"📦 Ny annons – {ad['site']}"
+    parts = [ad["title"]]
     if ad.get("price"):
-        lines.append(f"💰 {ad['price']}")
-    if ad.get("date"):
-        lines.append(f"📅 {ad['date']}")
-    lines.append(f"🔗 <a href=\"{ad['url']}\">Öppna annons</a>")
-    return "\n".join(lines)
+        parts.append(ad["price"])
+    parts.append(f"Sökning: {search_term}")
+    body = " · ".join(parts)
+    tag  = f"ad-{ad['id']}"[:32]
+    return send_push(title, body, tag, ad["url"])

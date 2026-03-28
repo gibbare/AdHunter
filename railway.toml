@@ -1,0 +1,7 @@
+[deploy]
+# Kör skriptet var 20:e minut som ett Cron Job
+cronSchedule = "*/20 * * * *"
+startCommand = "python monitor.py"
+
+[build]
+builder = "nixpacks"

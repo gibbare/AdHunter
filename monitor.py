@@ -16,7 +16,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from notifier import send_telegram, format_ad
+from notifier import format_and_send
 from scrapers import blocket, mpb, kamerastore, scandinavianphoto, cyberphoto, goecker
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
@@ -38,17 +38,7 @@ SCRAPERS = {
 
 def load_config() -> dict:
     with open(CONFIG_FILE, encoding="utf-8") as f:
-        cfg = json.load(f)
-
-    # Miljövariabler (GitHub Secrets) åsidosätter config.json
-    token   = os.environ.get("TELEGRAM_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if token:
-        cfg.setdefault("telegram", {})["token"]   = token
-    if chat_id:
-        cfg.setdefault("telegram", {})["chat_id"] = chat_id
-
-    return cfg
+        return json.load(f)
 
 
 def load_seen() -> set:
@@ -64,12 +54,11 @@ def save_seen(seen: set) -> None:
 
 
 def check_config(cfg: dict) -> bool:
-    tg = cfg.get("telegram", {})
-    if not tg.get("token"):
-        print("❌  TELEGRAM_TOKEN saknas. Sätt den som GitHub Secret eller i config.json.")
+    if not os.environ.get("WORKER_URL") and not cfg.get("worker_url"):
+        print("❌  WORKER_URL saknas. Sätt den som miljövariabel i Railway.")
         return False
-    if not tg.get("chat_id"):
-        print("❌  TELEGRAM_CHAT_ID saknas. Sätt den som GitHub Secret eller i config.json.")
+    if not os.environ.get("NOTIFY_SECRET") and not cfg.get("notify_secret"):
+        print("❌  NOTIFY_SECRET saknas. Sätt den som miljövariabel i Railway.")
         return False
     if not cfg.get("search_terms"):
         print("❌  Inga söktermer i config.json")
@@ -82,8 +71,6 @@ def check_config(cfg: dict) -> bool:
 # ──────────────────────────────────────────────
 
 def run_check(cfg: dict, seen: set) -> int:
-    token     = cfg["telegram"]["token"]
-    chat_id   = cfg["telegram"]["chat_id"]
     sites     = cfg.get("sites", {})
     max_price = cfg.get("max_price_sek")
     min_price = cfg.get("min_price_sek")
@@ -107,7 +94,7 @@ def run_check(cfg: dict, seen: set) -> int:
                 seen.add(uid)
                 new_count += 1
                 print(f"    ✅ Ny: [{ad['site']}] {ad['title']} – {ad.get('price', '')}")
-                send_telegram(token, chat_id, format_ad(ad, term))
+                format_and_send(ad, term)
                 time.sleep(0.5)
 
     return new_count
@@ -130,9 +117,11 @@ def main() -> None:
         sys.exit(1)
 
     seen = load_seen()
+    worker = os.environ.get("WORKER_URL") or cfg.get("worker_url", "")
     print(f"📋  Kända annonser sedan tidigare: {len(seen)}")
     print(f"🔎  Söktermer: {', '.join(cfg['search_terms'])}")
     print(f"📡  Sajter: {', '.join(s for s, v in cfg.get('sites', {}).items() if v)}")
+    print(f"🌐  Worker: {worker}")
     print("-" * 55)
 
     if once:
