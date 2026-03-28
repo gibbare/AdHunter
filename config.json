@@ -1,0 +1,22 @@
+{
+  "search_terms": [
+    "Sony A7",
+    "Leica M6",
+    "Canon 5D"
+  ],
+  "check_interval_minutes": 20,
+  "telegram": {
+    "token": "DIN_BOT_TOKEN_HÄR",
+    "chat_id": "DITT_CHAT_ID_HÄR"
+  },
+  "sites": {
+    "blocket": true,
+    "mpb": true,
+    "kamerastore": true,
+    "scandinavianphoto": true,
+    "cyberphoto": true,
+    "goecker": true
+  },
+  "max_price_sek": null,
+  "min_price_sek": null
+}
