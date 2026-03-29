@@ -414,10 +414,12 @@ async function renderNotify() {
           body: JSON.stringify({ secret }),
         });
         const data = await res.json();
-        if (data.sent > 0) {
-          showToast(`✓ Testnotis skickad till ${data.sent} enhet(er)`);
+        if (data.sent === 0) {
+          showToast('⚠️ Ingen prenumeration hittad – avaktivera och aktivera igen', true);
+        } else if (data.accepted > 0) {
+          showToast(`✓ Notis skickad (${data.accepted}/${data.sent} accepterad)`);
         } else {
-          showToast('⚠️ Inga prenumeranter hittades – avaktivera och aktivera notiser igen', true);
+          showToast(`⚠️ Skickad men avvisad av Apple – status: ${data.results?.[0]?.status ?? '?'}`, true);
         }
       } catch (e) {
         showToast('Fel: ' + e.message, true);
