@@ -18,7 +18,7 @@ from pathlib import Path
 
 import requests
 
-from notifier import format_and_send
+from notifier import format_and_send, save_ad
 from scrapers import blocket, mpb, kamerastore, scandinavianphoto, cyberphoto, goecker, rajalaproshop
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
@@ -125,6 +125,7 @@ def run_check(cfg: dict, seen: set) -> int:
                 new_count += 1
                 print(f"    ✅ Ny: [{ad['site']}] {ad['title']} – {ad.get('price', '')}")
                 format_and_send(ad, term)
+                save_ad(ad, term)
                 time.sleep(0.5)
 
     return new_count

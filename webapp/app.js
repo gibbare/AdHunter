@@ -13,6 +13,8 @@ const SITES = [
   { id: 'rajalaproshop',    name: 'Rajala Pro Shop',     emoji: '🏪' },
 ];
 
+const SITE_EMOJI = Object.fromEntries(SITES.map(s => [s.id, s.emoji]));
+
 const DEFAULT_CONFIG = {
   terms: [],
   sites: {
@@ -31,7 +33,7 @@ const DEFAULT_CONFIG = {
 
 let secret = localStorage.getItem('ah_secret') || '';
 let config = null;
-let currentView = 'searches';
+let currentView = 'finds';
 
 // ── API ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +47,29 @@ async function getConfig() {
     setStatusDot(true);
     throw e;
   }
+}
+
+async function getAds() {
+  const res = await fetch(`${WORKER}/ads?secret=${encodeURIComponent(secret)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function starAd(id, starred) {
+  await fetch(`${WORKER}/ads/star`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret, id, starred }),
+  });
+}
+
+async function clearUnstarred() {
+  const res = await fetch(`${WORKER}/ads`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret }),
+  });
+  return res.json();
 }
 
 async function saveConfig(cfg) {
@@ -93,11 +118,90 @@ function switchView(viewId) {
   });
 
   switch (viewId) {
+    case 'finds':    renderFinds();    break;
     case 'searches': renderSearches(); break;
     case 'sites':    renderSites();    break;
     case 'notify':   renderNotify();   break;
     case 'settings': renderSettings(); break;
   }
+}
+
+// ── Finds view ──────────────────────────────────────────────────────────────
+
+async function renderFinds() {
+  const el = document.getElementById('view-finds');
+  el.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><div>Hämtar annonser...</div></div>';
+
+  let ads = [];
+  try { ads = await getAds(); } catch {}
+
+  if (ads.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>Inga annonser hittade ännu.<br>Agenten söker var 20:e minut.</div></div>';
+    return;
+  }
+
+  const unstarred = ads.filter(a => !a.starred).length;
+
+  el.innerHTML = `
+    <div class="finds-toolbar">
+      <span class="finds-count">${ads.length} annons${ads.length !== 1 ? 'er' : ''} · ${ads.filter(a=>a.starred).length} ⭐</span>
+      ${unstarred > 0 ? `<button class="btn btn-danger" id="btn-clear">Töm ${unstarred} ointressanta</button>` : ''}
+    </div>
+    ${ads.map(ad => {
+      const emoji = SITE_EMOJI[ad.site?.toLowerCase().replace(/\s+/g,'').replace('scandinavianphoto','scandinavianphoto').replace('rajalaproshop','rajalaproshop')]
+        || Object.entries(SITE_EMOJI).find(([k])=>ad.site?.toLowerCase().includes(k.replace('shop','')))?.[1]
+        || '📋';
+      const date = ad.foundAt ? new Date(ad.foundAt).toLocaleDateString('sv-SE', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      return `
+        <div class="ad-card ${ad.starred ? 'starred' : ''}" data-id="${ad.id}" data-url="${ad.url}">
+          <div class="ad-body">
+            <div class="ad-title">${escHtml(ad.title)}</div>
+            <div class="ad-meta">
+              <span>${emoji} ${escHtml(ad.site)}</span>
+              ${ad.price ? `<span class="ad-price">${escHtml(ad.price)}</span>` : ''}
+              ${ad.query ? `<span>· ${escHtml(ad.query)}</span>` : ''}
+              ${date ? `<span>· ${date}</span>` : ''}
+            </div>
+          </div>
+          <button class="star-btn ${ad.starred ? 'active' : ''}" data-id="${ad.id}" data-starred="${ad.starred}" title="${ad.starred ? 'Ta bort stjärna' : 'Stjärnmarkera'}">
+            ${ad.starred ? '⭐' : '☆'}
+          </button>
+        </div>`;
+    }).join('')}
+  `;
+
+  // Clear button
+  document.getElementById('btn-clear')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-clear');
+    btn.disabled = true;
+    btn.textContent = 'Tömmer...';
+    await clearUnstarred();
+    await renderFinds();
+    showToast('Listan tömd ✓');
+  });
+
+  // Star buttons
+  el.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const nowStarred = btn.dataset.starred !== 'true';
+      btn.textContent = nowStarred ? '⭐' : '☆';
+      btn.dataset.starred = nowStarred;
+      btn.classList.toggle('active', nowStarred);
+      const card = btn.closest('.ad-card');
+      card.classList.toggle('starred', nowStarred);
+      await starAd(id, nowStarred);
+    });
+  });
+
+  // Click card → open URL
+  el.querySelectorAll('.ad-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.star-btn')) return;
+      window.open(card.dataset.url, '_blank');
+    });
+  });
 }
 
 // ── Searches view ──────────────────────────────────────────────────────────
@@ -432,7 +536,7 @@ function escHtml(str) {
 
 // ── Render all ─────────────────────────────────────────────────────────────
 
-function renderAll() {
+async function renderAll() {
   renderSearches();
   renderSites();
   renderNotify();

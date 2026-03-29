@@ -41,3 +41,29 @@ def format_and_send(ad: dict, search_term: str) -> bool:
     body = " · ".join(parts)
     tag  = f"ad-{ad['id']}"[:32]
     return send_push(title, body, tag, ad["url"])
+
+
+def save_ad(ad: dict, search_term: str) -> bool:
+    """Sparar en hittad annons till Cloudflare KV via Worker."""
+    if not WORKER_URL or not NOTIFY_SECRET:
+        return False
+    try:
+        resp = requests.post(
+            f"{WORKER_URL}/ads",
+            json={
+                "secret": NOTIFY_SECRET,
+                "ad": {
+                    "id":    ad["id"],
+                    "title": ad["title"],
+                    "price": ad.get("price", ""),
+                    "url":   ad["url"],
+                    "site":  ad["site"],
+                    "query": search_term,
+                },
+            },
+            timeout=10,
+        )
+        return resp.ok
+    except Exception as e:
+        print(f"[Notifier] Kunde inte spara annons: {e}")
+        return False

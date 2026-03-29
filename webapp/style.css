@@ -425,6 +425,86 @@ input[type=number].error {
   min-height: 18px;
 }
 
+/* ── Finds view ── */
+.finds-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.finds-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ad-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+
+.ad-card:hover {
+  border-color: var(--accent);
+  background: rgba(126, 184, 247, 0.05);
+}
+
+.ad-card.starred {
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.ad-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 3px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ad-price {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.star-btn:hover { opacity: 1; }
+.star-btn.active { opacity: 1; }
+
 /* ── Toast ── */
 .toast {
   position: fixed;
