@@ -1,7 +1,7 @@
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const WORKER = 'https://aurora-push.gibbare.workers.dev';
-const VAPID_KEY = 'BOkPa5xxrv4_txqeqZ6Dx5KDgfAlxdWG5LGyV1V76oFFzAqtzhww-VSsOiz1CMDxCJA8zAC1Z6yvhGhyGMo4qvs';
+const VAPID_KEY = 'BPf6BDJ-aUndJukDbHMbxjpw5LOcQz2_JPJoEVfDmxNiyhFxQXKS7GADw9yCrKBiW_LY9Rbl5gupgRMFFLv05mY';
 
 const SITES = [
   { id: 'blocket',           name: 'Blocket',             emoji: '🇸🇪' },
