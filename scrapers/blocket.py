@@ -18,9 +18,30 @@ HEADERS = {
 }
 
 
+def _sanitize_query(query: str) -> str:
+    """Blocket returnerar inga/fel svar om frågan innehåller '/' eller
+    ensamma tecken (t.ex. 'f' och '4' från 'f/4'). Rensa bort dem."""
+    q = query.replace("/", " ")
+    # Ta bort enstaka bokstäver OCH enstaka siffror (t.ex. 'f' och '4' från 'f/4')
+    q = re.sub(r'\b\w\b', '', q)
+    # Komprimera extra mellanslag
+    return re.sub(r'\s+', ' ', q).strip()
+
+
+def _matches(title: str, query: str) -> bool:
+    """Kontrollera att alla ord i söktermen (>1 tecken) finns i titeln."""
+    def normalize(s: str) -> str:
+        return re.sub(r"[^a-z0-9]", " ", s.lower())
+
+    title_norm  = normalize(title)
+    query_words = [w for w in normalize(query).split() if len(w) > 1]
+    return all(w in title_norm for w in query_words)
+
+
 def search(query: str, max_price: Optional[int] = None,
            min_price: Optional[int] = None) -> list[dict]:
-    params = {"q": query}
+    safe_query = _sanitize_query(query)
+    params = {"q": safe_query}
     if min_price:
         params["price_from"] = min_price
     if max_price:
@@ -59,6 +80,10 @@ def search(query: str, max_price: Optional[int] = None,
         price = str((item.get("offers") or {}).get("price") or "").strip()
 
         if not name or not url:
+            continue
+
+        # Relevansfiltret – samma princip som Rajala-scrapern
+        if not _matches(name, query):
             continue
 
         # Annons-ID från URL
