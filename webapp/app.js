@@ -399,6 +399,36 @@ async function renderNotify() {
   }
   container.appendChild(btn);
 
+  if (subscribed) {
+    const testBtn = document.createElement('button');
+    testBtn.className = 'btn btn-ghost';
+    testBtn.textContent = '🔔 Skicka testnotis';
+    testBtn.style.marginTop = '8px';
+    testBtn.addEventListener('click', async () => {
+      testBtn.disabled = true;
+      testBtn.textContent = 'Skickar...';
+      try {
+        const res = await fetch(`${WORKER}/test-notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secret }),
+        });
+        const data = await res.json();
+        if (data.sent > 0) {
+          showToast(`✓ Testnotis skickad till ${data.sent} enhet(er)`);
+        } else {
+          showToast('⚠️ Inga prenumeranter hittades – avaktivera och aktivera notiser igen', true);
+        }
+      } catch (e) {
+        showToast('Fel: ' + e.message, true);
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = '🔔 Skicka testnotis';
+      }
+    });
+    container.appendChild(testBtn);
+  }
+
   const hint = document.createElement('p');
   hint.className = 'notify-hint';
   hint.textContent = 'Notiser levereras till den här enheten när en ny annons hittas.';
