@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ad Monitor">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Ad Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Auth screen -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <h1>📦</h1>
+      <h2 style="font-size:1.4rem;margin-bottom:6px;color:var(--text)">Ad Monitor</h2>
+      <p>Ange din NOTIFY_SECRET för att logga in</p>
+      <input type="password" id="auth-input" placeholder="NOTIFY_SECRET" autocomplete="current-password">
+      <button class="btn btn-primary" id="auth-btn" style="width:100%;margin-top:14px">Logga in</button>
+      <div class="auth-error" id="auth-error"></div>
+    </div>
+  </div>
+
+  <!-- Main app (hidden until auth) -->
+  <div id="app" class="hidden" style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
+
+    <!-- Header -->
+    <header class="app-header">
+      <h1>📦 Ad Monitor</h1>
+      <div id="status-dot"></div>
+    </header>
+
+    <!-- Navigation -->
+    <nav id="app-nav">
+      <button class="nav-tab active" data-view="searches">🔍 Sökningar</button>
+      <button class="nav-tab" data-view="sites">🌐 Sajter</button>
+      <button class="nav-tab" data-view="notify">🔔 Notiser</button>
+      <button class="nav-tab" data-view="settings">⚙️ Inst.</button>
+    </nav>
+
+    <!-- Main content -->
+    <main id="app-main">
+
+      <!-- Searches view -->
+      <div id="view-searches" class="view active">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Sites view -->
+      <div id="view-sites" class="view">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Notify view -->
+      <div id="view-notify" class="view">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Settings view -->
+      <div id="view-settings" class="view">
+        <!-- Rendered by JS -->
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

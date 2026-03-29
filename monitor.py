@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import requests
+
 from notifier import format_and_send
 from scrapers import blocket, mpb, kamerastore, scandinavianphoto, cyberphoto, goecker
 
@@ -38,7 +40,34 @@ SCRAPERS = {
 
 def load_config() -> dict:
     with open(CONFIG_FILE, encoding="utf-8") as f:
-        return json.load(f)
+        cfg = json.load(f)
+
+    # Try fetching live config from Worker (overrides config.json terms/sites/interval)
+    worker_url = os.environ.get("WORKER_URL", "").rstrip("/")
+    notify_secret = os.environ.get("NOTIFY_SECRET", "")
+    if worker_url and notify_secret:
+        try:
+            resp = requests.get(
+                f"{worker_url}/config",
+                params={"secret": notify_secret},
+                timeout=10
+            )
+            if resp.status_code == 200:
+                remote = resp.json()
+                # Only override if there are terms defined remotely
+                if remote.get("terms"):
+                    cfg["search_terms"] = [
+                        t["query"] for t in remote["terms"] if t.get("active", True)
+                    ]
+                if remote.get("sites"):
+                    cfg["sites"] = remote["sites"]
+                if remote.get("interval"):
+                    cfg["check_interval_minutes"] = remote["interval"]
+                print(f"  ✅ Config hämtad från Worker ({len(cfg['search_terms'])} aktiva termer)")
+        except Exception as e:
+            print(f"  ⚠️  Kunde inte hämta config från Worker: {e} – använder config.json")
+
+    return cfg
 
 
 def load_seen() -> set:
