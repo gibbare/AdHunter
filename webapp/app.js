@@ -368,6 +368,13 @@ async function renderNotify() {
   const isStandalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
 
+  // iOS-versionskontroll – Web Push kräver iOS 16.4+
+  const iosMatch = navigator.userAgent.match(/iPhone OS (\d+)_(\d+)/);
+  const iosMajor = iosMatch ? parseInt(iosMatch[1]) : 0;
+  const iosMinor = iosMatch ? parseInt(iosMatch[2]) : 0;
+  const iosVersionOk = !iosMatch || (iosMajor > 16) || (iosMajor === 16 && iosMinor >= 4);
+  const iosVersionStr = iosMatch ? `iOS ${iosMajor}.${iosMinor}` : null;
+
   if (!isStandalone) {
     container.innerHTML = `
       <div class="card" style="text-align:center;padding:24px 16px">
@@ -382,6 +389,23 @@ async function renderNotify() {
       </div>`;
     return;
   }
+
+  if (!iosVersionOk) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:24px 16px">
+        <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+        <div style="font-weight:700;margin-bottom:8px">iOS-version för gammal</div>
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.5">
+          Push-notiser kräver <strong>iOS 16.4 eller senare</strong>.<br>
+          Din enhet kör ${iosVersionStr}.<br><br>
+          Uppdatera iOS under Inställningar → Allmänt → Programuppdatering.
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Visa aktuell notis-behörighet
+  const notifPerm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
 
   let subscribed = false;
   try {
@@ -452,7 +476,8 @@ async function renderNotify() {
 
   const hint = document.createElement('p');
   hint.className = 'notify-hint';
-  hint.textContent = 'Notiser levereras till den här enheten när en ny annons hittas.';
+  const permLabel = notifPerm === 'granted' ? '✅ Tillåten' : notifPerm === 'denied' ? '❌ Nekad' : '⏳ Ej frågad';
+  hint.textContent = `Notisbehörighet: ${permLabel}${iosVersionStr ? ' · ' + iosVersionStr : ''}`;
   container.appendChild(hint);
 }
 
