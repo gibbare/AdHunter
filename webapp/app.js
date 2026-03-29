@@ -462,7 +462,9 @@ async function renderNotify() {
         } else if (data.accepted > 0) {
           showToast(`✓ Notis skickad (${data.accepted}/${data.sent} accepterad)`);
         } else {
-          showToast(`⚠️ Skickad men avvisad av Apple – status: ${data.results?.[0]?.status ?? '?'}`, true);
+          const r = data.results?.[0];
+          const detail = r?.error || `HTTP ${r?.status ?? '?'}`;
+          showToast(`⚠️ Push misslyckades: ${detail}`, true);
         }
       } catch (e) {
         showToast('Fel: ' + e.message, true);
