@@ -485,6 +485,19 @@ async function init() {
     if (e.key === 'Enter') document.getElementById('auth-btn').click();
   });
 
+  // Eye icon – toggle password visibility
+  document.getElementById('auth-eye').addEventListener('click', () => {
+    const input = document.getElementById('auth-input');
+    const eye   = document.getElementById('auth-eye');
+    if (input.type === 'password') {
+      input.type = 'text';
+      eye.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      eye.textContent = '👁';
+    }
+  });
+
   // Try to restore session
   if (secret) {
     try {

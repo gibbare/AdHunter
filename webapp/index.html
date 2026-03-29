@@ -18,8 +18,11 @@
     <div class="auth-card">
       <h1>📦</h1>
       <h2 style="font-size:1.4rem;margin-bottom:6px;color:var(--text)">Ad Monitor</h2>
-      <p>Ange din NOTIFY_SECRET för att logga in</p>
-      <input type="password" id="auth-input" placeholder="NOTIFY_SECRET" autocomplete="current-password">
+      <p>Ange lösenordet för att logga in</p>
+      <div class="auth-input-wrap">
+        <input type="password" id="auth-input" placeholder="Lösenord" autocomplete="current-password">
+        <button type="button" id="auth-eye" title="Visa/dölj lösenord">👁</button>
+      </div>
       <button class="btn btn-primary" id="auth-btn" style="width:100%;margin-top:14px">Logga in</button>
       <div class="auth-error" id="auth-error"></div>
     </div>
