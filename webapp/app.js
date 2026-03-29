@@ -364,6 +364,25 @@ async function renderNotify() {
   const container = document.getElementById('view-notify');
   container.innerHTML = '';
 
+  // Kontrollera standalone-läge (krävs för iOS Web Push)
+  const isStandalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (!isStandalone) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:24px 16px">
+        <div style="font-size:2rem;margin-bottom:12px">📲</div>
+        <div style="font-weight:700;margin-bottom:8px">Öppna från hemskärmen</div>
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.5">
+          Push-notiser kräver att appen är installerad och öppnad
+          <strong>från hemskärmsikonen</strong>, inte från Safari.<br><br>
+          Tryck på Dela&nbsp;⬆️ i Safari och välj<br>
+          <strong>"Lägg till på hemskärmen"</strong>.
+        </div>
+      </div>`;
+    return;
+  }
+
   let subscribed = false;
   try {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
