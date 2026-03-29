@@ -11,7 +11,8 @@
     "kamerastore": true,
     "scandinavianphoto": true,
     "cyberphoto": true,
-    "goecker": true
+    "goecker": true,
+    "rajalaproshop": true
   },
   "max_price_sek": null,
   "min_price_sek": null

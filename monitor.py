@@ -19,7 +19,7 @@ from pathlib import Path
 import requests
 
 from notifier import format_and_send
-from scrapers import blocket, mpb, kamerastore, scandinavianphoto, cyberphoto, goecker
+from scrapers import blocket, mpb, kamerastore, scandinavianphoto, cyberphoto, goecker, rajalaproshop
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
 SEEN_FILE   = Path(__file__).parent / "seen_ads.json"
@@ -31,6 +31,7 @@ SCRAPERS = {
     "scandinavianphoto": scandinavianphoto.search,
     "cyberphoto":        cyberphoto.search,
     "goecker":           goecker.search,
+    "rajalaproshop":     rajalaproshop.search,
 }
 
 

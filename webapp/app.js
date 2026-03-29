@@ -10,6 +10,7 @@ const SITES = [
   { id: 'scandinavianphoto', name: 'Scandinavian Photo',  emoji: '📸' },
   { id: 'cyberphoto',        name: 'Cyberphoto',          emoji: '💻' },
   { id: 'goecker',           name: 'Goecker',             emoji: '🎞️' },
+  { id: 'rajalaproshop',    name: 'Rajala Pro Shop',     emoji: '🏪' },
 ];
 
 const DEFAULT_CONFIG = {
@@ -21,6 +22,7 @@ const DEFAULT_CONFIG = {
     scandinavianphoto: true,
     cyberphoto: true,
     goecker: true,
+    rajalaproshop: true,
   },
   interval: 20,
 };
