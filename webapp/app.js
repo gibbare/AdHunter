@@ -176,6 +176,28 @@ async function renderFinds() {
     }).join('')}
   `;
 
+  // Uppdatera räknaren och rensa-knappens text direkt i DOM
+  function updateToolbar() {
+    const allCards  = el.querySelectorAll('.ad-card');
+    const starredNow = el.querySelectorAll('.star-btn.active').length;
+    const total      = allCards.length;
+    const unstarredNow = total - starredNow;
+
+    const countEl = el.querySelector('.finds-count');
+    if (countEl) {
+      countEl.textContent = `${total} annons${total !== 1 ? 'er' : ''} · ${starredNow} ⭐`;
+    }
+
+    const clearBtn = el.querySelector('#btn-clear');
+    if (clearBtn && clearBtn.dataset.confirm !== 'true') {
+      if (unstarredNow === 0) {
+        clearBtn.remove();
+      } else {
+        clearBtn.textContent = `Töm ${unstarredNow} ointressanta`;
+      }
+    }
+  }
+
   // Clear button – tvåstegs-bekräftelse + väntar på pågående stjärnsparningar
   document.getElementById('btn-clear')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-clear');
@@ -225,6 +247,7 @@ async function renderFinds() {
       btn.classList.toggle('active', nowStarred);
       const card = btn.closest('.ad-card');
       card.classList.toggle('starred', nowStarred);
+      updateToolbar();  // uppdatera räknare direkt
 
       // Spara till servern
       pendingStarOps++;
@@ -237,6 +260,7 @@ async function renderFinds() {
         btn.dataset.starred = String(!nowStarred);
         btn.classList.toggle('active', !nowStarred);
         card.classList.toggle('starred', !nowStarred);
+        updateToolbar();  // räkna om igen efter återställning
         showToast('Kunde inte spara stjärna – försök igen', true);
       }
     });
