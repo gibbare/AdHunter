@@ -53,7 +53,6 @@ def search(query: str, max_price: Optional[int] = None,
             continue
 
         # Filtrera bort nya produkter – vi vill bara ha begagnade
-        # usedgear=Yes, eller kategori/URL innehåller "swap"/"begagna"
         url_low = url.lower()
         is_used = (
             usedgear == "yes"
@@ -63,6 +62,10 @@ def search(query: str, max_price: Optional[int] = None,
             or "swap" in url_low
         )
         if not is_used:
+            continue
+
+        # Filtrera bort produkter som inte matchar söktermen
+        if not _matches(name, query):
             continue
 
         # Prisfilter (SEK)
@@ -91,3 +94,16 @@ def search(query: str, max_price: Optional[int] = None,
         })
 
     return results
+
+
+def _matches(title: str, query: str) -> bool:
+    """Kontrollerar att alla signifikanta ord i söktermen finns i produktnamnet.
+    Normaliserar bort specialtecken (t.ex. 'f/4' → 'f 4') innan jämförelse.
+    """
+    import re
+    def normalize(s):
+        return re.sub(r"[^a-z0-9]", " ", s.lower())
+
+    title_norm = normalize(title)
+    query_words = [w for w in normalize(query).split() if len(w) > 1]
+    return all(w in title_norm for w in query_words)
