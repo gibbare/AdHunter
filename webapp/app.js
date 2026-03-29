@@ -34,6 +34,7 @@ const DEFAULT_CONFIG = {
 let secret = localStorage.getItem('ah_secret') || '';
 let config = null;
 let currentView = 'finds';
+let pendingStarOps = 0;  // spårar pågående stjärn-sparningar
 
 // ── API ────────────────────────────────────────────────────────────────────
 
@@ -56,11 +57,16 @@ async function getAds() {
 }
 
 async function starAd(id, starred) {
-  await fetch(`${WORKER}/ads/star`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret, id, starred }),
-  });
+  try {
+    const res = await fetch(`${WORKER}/ads/star`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, id, starred }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 async function clearUnstarred() {
@@ -170,28 +176,69 @@ async function renderFinds() {
     }).join('')}
   `;
 
-  // Clear button
+  // Clear button – tvåstegs-bekräftelse + väntar på pågående stjärnsparningar
   document.getElementById('btn-clear')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-clear');
+
+    // Blockera om en stjärna håller på att sparas
+    if (pendingStarOps > 0) {
+      showToast('Väntar på att stjärnan sparas – försök igen', false);
+      return;
+    }
+
+    // Första klick: be om bekräftelse
+    if (btn.dataset.confirm !== 'true') {
+      btn.dataset.confirm = 'true';
+      btn.textContent = '⭐ Bekräfta – stjärnmärkta behålls';
+      btn.style.background = '#c0392b';
+      const resetBtn = () => {
+        if (btn.dataset.confirm === 'true') {
+          delete btn.dataset.confirm;
+          btn.textContent = `Töm ${unstarred} ointressanta`;
+          btn.style.background = '';
+        }
+      };
+      setTimeout(resetBtn, 4000);
+      return;
+    }
+
+    // Andra klick: utför rensningen
+    delete btn.dataset.confirm;
     btn.disabled = true;
     btn.textContent = 'Tömmer...';
+    btn.style.background = '';
     await clearUnstarred();
     await renderFinds();
     showToast('Listan tömd ✓');
   });
 
-  // Star buttons
+  // Star buttons – spårar pågående sparningar och återställer vid fel
   el.querySelectorAll('.star-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const id = btn.dataset.id;
       const nowStarred = btn.dataset.starred !== 'true';
+
+      // Optimistisk UI-uppdatering
       btn.textContent = nowStarred ? '⭐' : '☆';
-      btn.dataset.starred = nowStarred;
+      btn.dataset.starred = String(nowStarred);
       btn.classList.toggle('active', nowStarred);
       const card = btn.closest('.ad-card');
       card.classList.toggle('starred', nowStarred);
-      await starAd(id, nowStarred);
+
+      // Spara till servern
+      pendingStarOps++;
+      const ok = await starAd(id, nowStarred);
+      pendingStarOps--;
+
+      if (!ok) {
+        // Återställ UI om sparning misslyckades
+        btn.textContent = nowStarred ? '☆' : '⭐';
+        btn.dataset.starred = String(!nowStarred);
+        btn.classList.toggle('active', !nowStarred);
+        card.classList.toggle('starred', !nowStarred);
+        showToast('Kunde inte spara stjärna – försök igen', true);
+      }
     });
   });
 
