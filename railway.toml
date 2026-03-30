@@ -1,7 +1,7 @@
 [deploy]
-# Kör skriptet var 20:e minut som ett Cron Job
-cronSchedule = "*/20 * * * *"
-startCommand = "RUN_ONCE=true python monitor.py"
+# Cron-schema hanteras av GitHub Actions (monitor.yml) för beständig seen_ads.json
+# Railway används inte längre som primär schemaläggare
+startCommand = "echo 'Schemaläggning sker via GitHub Actions'"
 
 [build]
 builder = "nixpacks"
