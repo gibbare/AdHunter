@@ -20,7 +20,7 @@ STEG 2 – Skapa en Telegram-bot (5 minuter, gratis)
 1. Öppna Telegram och sök efter @BotFather
 2. Skicka:  /newbot
 3. Välj ett namn och ett användarnamn (måste sluta på "bot")
-4. Du får ett TOKEN, t.ex.:  1234567890:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4. Du får ett TOKEN på formatet:  <BOT_ID>:<HEMLIG_NYCKEL>
    → Kopiera det
 
 5. Sök upp DIN nya bot i Telegram och klicka "Start"
