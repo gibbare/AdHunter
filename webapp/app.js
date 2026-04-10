@@ -187,6 +187,7 @@ async function renderFinds() {
   const unstarred = ads.filter(a => !a.starred).length;
 
   el.innerHTML = `
+    <div style="font-size:0.7rem;color:var(--muted);text-align:right">Version 1.2</div>
     <div class="finds-toolbar">
       <span class="finds-count">${ads.length} annons${ads.length !== 1 ? 'er' : ''} · ${ads.filter(a=>a.starred).length} ⭐</span>
       ${unstarred > 0 ? `<button class="btn btn-danger" id="btn-clear">Töm ${unstarred} ointressanta</button>` : ''}
