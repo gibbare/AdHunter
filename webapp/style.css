@@ -568,6 +568,7 @@ input[type=number].error {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
+  touch-action: pan-y;
 }
 
 .ad-delete-bg {
@@ -594,6 +595,7 @@ input[type=number].error {
 .ad-card-wrap .ad-card {
   position: relative;
   will-change: transform;
+  touch-action: pan-y;
   transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
