@@ -212,6 +212,7 @@ async function renderFinds() {
             <button class="star-btn ${ad.starred ? 'active' : ''}" data-id="${ad.id}" data-starred="${ad.starred}" title="${ad.starred ? 'Ta bort stjärna' : 'Stjärnmarkera'}">
               ${ad.starred ? '⭐' : '☆'}
             </button>
+            <button class="delete-btn" data-id="${ad.id}" title="Radera annons">🗑️</button>
           </div>
         </div>`;
     }).join('')}
@@ -311,7 +312,38 @@ async function renderFinds() {
   el.querySelectorAll('.ad-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.star-btn')) return;
+      if (e.target.closest('.delete-btn')) return;
       window.open(card.dataset.url, '_blank');
+    });
+  });
+
+  // Delete button
+  el.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const confirmed = await showDeleteDialog();
+      if (!confirmed) return;
+
+      const wrap = btn.closest('.ad-card-wrap');
+      wrap.style.transition = 'max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease';
+      wrap.style.overflow = 'hidden';
+      wrap.style.maxHeight = wrap.offsetHeight + 'px';
+      wrap.style.opacity = '1';
+      requestAnimationFrame(() => {
+        wrap.style.maxHeight = '0';
+        wrap.style.opacity = '0';
+        wrap.style.marginBottom = '-12px';
+      });
+      setTimeout(async () => {
+        wrap.remove();
+        updateToolbar();
+        const ok = await deleteAd(id);
+        if (!ok) {
+          showToast('Kunde inte radera – försök igen', true);
+          await renderFinds();
+        }
+      }, 300);
     });
   });
 
