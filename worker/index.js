@@ -223,6 +223,18 @@ export default {
       return cors(JSON.stringify({ removed: ads.length - kept.length, kept: kept.length }), 200);
     }
 
+    // DELETE /ads/one – remove a single ad by id { secret, id }
+    if (request.method === 'DELETE' && path === '/ads/one') {
+      const body = await request.json();
+      if (!env.NOTIFY_SECRET || body.secret !== env.NOTIFY_SECRET)
+        return new Response('Unauthorized', { status: 401 });
+      const raw = await env.SUBS.get('__found_ads');
+      const ads = raw ? JSON.parse(raw) : [];
+      const kept = ads.filter(a => a.id !== body.id);
+      await env.SUBS.put('__found_ads', JSON.stringify(kept));
+      return cors('{"ok":true}', 200);
+    }
+
     return new Response('Not found', { status: 404 });
   },
 

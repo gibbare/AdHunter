@@ -69,6 +69,19 @@ async function starAd(id, starred) {
   }
 }
 
+async function deleteAd(id) {
+  try {
+    const res = await fetch(`${WORKER}/ads/one`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, id }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function clearUnstarred() {
   const res = await fetch(`${WORKER}/ads`, {
     method: 'DELETE',
@@ -132,6 +145,31 @@ function switchView(viewId) {
   }
 }
 
+// ── Delete dialog ──────────────────────────────────────────────────────────
+
+function showDeleteDialog() {
+  return new Promise(resolve => {
+    const dialog = document.getElementById('delete-dialog');
+    dialog.classList.remove('hidden');
+
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel  = () => { cleanup(); resolve(false); };
+
+    function cleanup() {
+      dialog.classList.add('hidden');
+      document.getElementById('delete-confirm').removeEventListener('click', onConfirm);
+      document.getElementById('delete-cancel').removeEventListener('click', onCancel);
+      document.getElementById('delete-dialog')
+        .querySelector('.delete-dialog-backdrop')
+        .removeEventListener('click', onCancel);
+    }
+
+    document.getElementById('delete-confirm').addEventListener('click', onConfirm);
+    document.getElementById('delete-cancel').addEventListener('click', onCancel);
+    dialog.querySelector('.delete-dialog-backdrop').addEventListener('click', onCancel);
+  });
+}
+
 // ── Finds view ──────────────────────────────────────────────────────────────
 
 async function renderFinds() {
@@ -159,19 +197,22 @@ async function renderFinds() {
         || '📋';
       const date = ad.foundAt ? new Date(ad.foundAt).toLocaleDateString('sv-SE', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
       return `
-        <div class="ad-card ${ad.starred ? 'starred' : ''}" data-id="${ad.id}" data-url="${ad.url}">
-          <div class="ad-body">
-            <div class="ad-title">${escHtml(ad.title)}</div>
-            <div class="ad-meta">
-              <span>${emoji} ${escHtml(ad.site)}</span>
-              ${ad.price ? `<span class="ad-price">${escHtml(ad.price)}</span>` : ''}
-              ${ad.query ? `<span>· ${escHtml(ad.query)}</span>` : ''}
-              ${date ? `<span>· ${date}</span>` : ''}
+        <div class="ad-card-wrap">
+          <div class="ad-delete-bg"><span class="delete-icon">🗑️</span></div>
+          <div class="ad-card ${ad.starred ? 'starred' : ''}" data-id="${ad.id}" data-url="${ad.url}">
+            <div class="ad-body">
+              <div class="ad-title">${escHtml(ad.title)}</div>
+              <div class="ad-meta">
+                <span>${emoji} ${escHtml(ad.site)}</span>
+                ${ad.price ? `<span class="ad-price">${escHtml(ad.price)}</span>` : ''}
+                ${ad.query ? `<span>· ${escHtml(ad.query)}</span>` : ''}
+                ${date ? `<span>· ${date}</span>` : ''}
+              </div>
             </div>
+            <button class="star-btn ${ad.starred ? 'active' : ''}" data-id="${ad.id}" data-starred="${ad.starred}" title="${ad.starred ? 'Ta bort stjärna' : 'Stjärnmarkera'}">
+              ${ad.starred ? '⭐' : '☆'}
+            </button>
           </div>
-          <button class="star-btn ${ad.starred ? 'active' : ''}" data-id="${ad.id}" data-starred="${ad.starred}" title="${ad.starred ? 'Ta bort stjärna' : 'Stjärnmarkera'}">
-            ${ad.starred ? '⭐' : '☆'}
-          </button>
         </div>`;
     }).join('')}
   `;
@@ -271,6 +312,89 @@ async function renderFinds() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.star-btn')) return;
       window.open(card.dataset.url, '_blank');
+    });
+  });
+
+  // Swipe left to delete
+  el.querySelectorAll('.ad-card-wrap').forEach(wrap => {
+    const card = wrap.querySelector('.ad-card');
+    let startX = 0, startY = 0, currentX = 0;
+    let dragging = false, lockAxis = null;
+    const THRESHOLD = 0.20; // 20% of screen width
+
+    card.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = 0;
+      dragging = true;
+      lockAxis = null;
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      // Determine axis lock on first significant movement
+      if (!lockAxis && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+        lockAxis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+      }
+
+      if (lockAxis !== 'x') return;
+
+      // Only allow left swipe
+      currentX = Math.min(0, dx);
+      card.classList.add('dragging');
+      card.style.transform = `translateX(${currentX}px)`;
+      wrap.classList.toggle('swiping', currentX < -10);
+      e.preventDefault();
+    }, { passive: false });
+
+    card.addEventListener('touchend', async () => {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+      wrap.classList.remove('swiping');
+
+      const adId = card.dataset.id;
+      const swipedEnough = Math.abs(currentX) >= window.innerWidth * THRESHOLD;
+
+      if (swipedEnough) {
+        // Snap fully off-screen while dialog opens
+        card.style.transform = `translateX(-${window.innerWidth}px)`;
+        card.style.transition = 'transform 0.2s ease';
+
+        const confirmed = await showDeleteDialog();
+        if (confirmed) {
+          wrap.style.transition = 'max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease';
+          wrap.style.overflow = 'hidden';
+          wrap.style.maxHeight = wrap.offsetHeight + 'px';
+          wrap.style.opacity = '1';
+          // Trigger collapse
+          requestAnimationFrame(() => {
+            wrap.style.maxHeight = '0';
+            wrap.style.opacity = '0';
+            wrap.style.marginBottom = '-12px';
+          });
+          setTimeout(async () => {
+            wrap.remove();
+            updateToolbar();
+            const ok = await deleteAd(adId);
+            if (!ok) {
+              showToast('Kunde inte radera – försök igen', true);
+              await renderFinds();
+            }
+          }, 300);
+        } else {
+          // Snap back
+          card.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          card.style.transform = 'translateX(0)';
+        }
+      } else {
+        // Not far enough – snap back
+        card.style.transform = 'translateX(0)';
+      }
+      currentX = 0;
     });
   });
 }

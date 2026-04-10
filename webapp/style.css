@@ -563,6 +563,86 @@ input[type=number].error {
   padding: 0 8px;
 }
 
+/* ── Swipe-to-delete ── */
+.ad-card-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.ad-delete-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 113, 113, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.ad-delete-bg .delete-icon {
+  font-size: 1.4rem;
+}
+
+.ad-card-wrap.swiping .ad-delete-bg {
+  opacity: 1;
+}
+
+.ad-card-wrap .ad-card {
+  position: relative;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.ad-card-wrap .ad-card.dragging {
+  transition: none;
+}
+
+/* ── Delete confirmation dialog ── */
+#delete-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.delete-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.delete-dialog-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a2438;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px 20px;
+  width: min(300px, 88vw);
+  text-align: center;
+}
+
+.delete-dialog-box p {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.delete-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-dialog-actions .btn {
+  flex: 1;
+}
+
 /* ── Term card left/right layout ── */
 .term-left {
   flex: 1;
