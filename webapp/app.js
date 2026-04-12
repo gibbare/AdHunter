@@ -5,7 +5,8 @@ const VAPID_KEY = 'BPf6BDJ-aUndJukDbHMbxjpw5LOcQz2_JPJoEVfDmxNiyhFxQXKS7GADw9yCr
 
 const SITES = [
   { id: 'blocket',           name: 'Blocket',             emoji: '🇸🇪' },
-  { id: 'mpb',               name: 'MPB',                 emoji: '📦' },
+  { id: 'mpb',               name: 'MPB',                 emoji: '📦', unavailable: true,
+    unavailableReason: 'MPB blockerar automatisk skanning – sajten tillåter inte API-åtkomst.' },
   { id: 'kamerastore',       name: 'Kamerastore',         emoji: '📷' },
   { id: 'scandinavianphoto', name: 'Scandinavian Photo',  emoji: '📸' },
   { id: 'cyberphoto',        name: 'Cyberphoto',          emoji: '💻' },
@@ -522,9 +523,10 @@ function renderSites() {
   grid.className = 'site-grid';
 
   SITES.forEach(site => {
-    const isActive = config.sites[site.id] !== false;
+    const isActive   = config.sites[site.id] !== false;
+    const unavailable = !!site.unavailable;
     const card = document.createElement('div');
-    card.className = `site-card${isActive ? '' : ' inactive'}`;
+    card.className = `site-card${(isActive && !unavailable) ? '' : ' inactive'}${unavailable ? ' unavailable' : ''}`;
     card.dataset.siteId = site.id;
 
     card.innerHTML = `
@@ -532,8 +534,8 @@ function renderSites() {
         <div class="site-emoji">${site.emoji}</div>
         <div class="site-name">${escHtml(site.name)}</div>
       </div>
-      <label class="toggle">
-        <input type="checkbox" ${isActive ? 'checked' : ''} class="site-toggle" data-site="${site.id}">
+      <label class="toggle${unavailable ? ' toggle-disabled' : ''}">
+        <input type="checkbox" ${(isActive && !unavailable) ? 'checked' : ''} class="site-toggle" data-site="${site.id}" ${unavailable ? 'disabled' : ''}>
         <span class="thumb"></span>
       </label>
     `;
@@ -542,8 +544,17 @@ function renderSites() {
 
   container.appendChild(grid);
 
-  // Events: site toggle
-  grid.querySelectorAll('.site-toggle').forEach(cb => {
+  // Events: klik på otillgänglig sajt → visa förklaring
+  grid.querySelectorAll('.site-card.unavailable').forEach(card => {
+    card.addEventListener('click', () => {
+      const siteId = card.dataset.siteId;
+      const site   = SITES.find(s => s.id === siteId);
+      showToast(site?.unavailableReason || 'Sajten går inte att skanna.', true);
+    });
+  });
+
+  // Events: site toggle (bara aktiva sajter)
+  grid.querySelectorAll('.site-toggle:not([disabled])').forEach(cb => {
     cb.addEventListener('change', async () => {
       const siteId = cb.dataset.site;
       config.sites[siteId] = cb.checked;

@@ -300,6 +300,31 @@ input[type=number].error {
   opacity: 0.45;
 }
 
+.site-card.unavailable {
+  opacity: 0.38;
+  cursor: pointer;
+}
+
+.site-card.unavailable .site-name::after {
+  content: ' – ej tillgänglig';
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.toggle-disabled {
+  pointer-events: none;
+}
+
+.toggle-disabled .thumb {
+  background: rgba(255, 255, 255, 0.08);
+  cursor: not-allowed;
+}
+
+.toggle-disabled .thumb::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .site-name {
   font-size: 0.9rem;
   font-weight: 600;
