@@ -562,6 +562,13 @@ input[type=number].error {
   display: none !important;
 }
 
+.settings-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
 /* ── Interval / settings rows ── */
 .interval-row {
   display: flex;

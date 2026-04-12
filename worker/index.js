@@ -211,6 +211,32 @@ export default {
       return cors('{"ok":true}', 200);
     }
 
+    // POST /trigger-scan – triggar GitHub Actions-workflow manuellt
+    if (request.method === 'POST' && path === '/trigger-scan') {
+      const body = await request.json();
+      if (!env.NOTIFY_SECRET || body.secret !== env.NOTIFY_SECRET)
+        return new Response('Unauthorized', { status: 401 });
+      if (!env.GITHUB_TOKEN)
+        return cors('{"ok":false,"error":"GITHUB_TOKEN saknas i Worker"}', 200);
+      const ghRes = await fetch(
+        'https://api.github.com/repos/gibbare/AdHunter/actions/workflows/monitor.yml/dispatches',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+            'User-Agent': 'AdHunter-Worker',
+          },
+          body: JSON.stringify({ ref: 'master' }),
+        }
+      );
+      if (ghRes.status === 204) return cors('{"ok":true}', 200);
+      const txt = await ghRes.text();
+      return cors(JSON.stringify({ ok: false, error: `GitHub ${ghRes.status}: ${txt.substring(0, 120)}` }), 200);
+    }
+
     // DELETE /ads – remove all unstarred ads { secret }
     if (request.method === 'DELETE' && path === '/ads') {
       const body = await request.json();

@@ -1,0 +1,7 @@
+name = "aurora-push"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "SUBS"
+id = "97060c9926e545f5975615b9b5046f94"

@@ -768,6 +768,15 @@ function renderSettings() {
   `;
   container.appendChild(intervalRow);
 
+  const scanCard = document.createElement('div');
+  scanCard.className = 'card';
+  scanCard.innerHTML = `
+    <div class="section-title">Manuell sökning</div>
+    <p class="settings-hint">Starta en sökning direkt utan att vänta på det schemalagda intervallet.</p>
+    <button class="btn btn-primary" id="scan-now-btn" style="width:100%">Sök nu</button>
+  `;
+  container.appendChild(scanCard);
+
   const logoutCard = document.createElement('div');
   logoutCard.className = 'card';
   logoutCard.innerHTML = `
@@ -778,6 +787,36 @@ function renderSettings() {
   document.getElementById('interval-select').addEventListener('change', async (e) => {
     config.interval = parseInt(e.target.value);
     await saveConfig(config);
+  });
+
+  document.getElementById('scan-now-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('scan-now-btn');
+    btn.disabled = true;
+    btn.textContent = 'Startar sökning...';
+    try {
+      const res = await fetch(`${WORKER}/trigger-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        btn.textContent = 'Sökning startad';
+        showToast('Sökning startad – nya träffar visas om ca 1–2 min');
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'Sök nu';
+        }, 30000);
+      } else {
+        showToast(data.error || 'Kunde inte starta sökning', true);
+        btn.disabled = false;
+        btn.textContent = 'Sök nu';
+      }
+    } catch (e) {
+      showToast('Nätverksfel: ' + e.message, true);
+      btn.disabled = false;
+      btn.textContent = 'Sök nu';
+    }
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
