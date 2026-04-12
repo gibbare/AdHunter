@@ -547,7 +547,10 @@ input[type=number].error {
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+  word-break: break-word;
 }
 
 .toast.show {
