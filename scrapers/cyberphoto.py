@@ -5,10 +5,20 @@ Produktresultat filtreras på is_used=True för att bara visa begagnat.
 import re
 import requests
 from typing import Optional
+from scrapers._match import MOUNT_WORDS
 
 KLEVU_ENDPOINT = "https://uscs32v2.ksearchnet.com/cs/v2/search"
 KLEVU_API_KEY  = "klevu-169761350968416815"
 BASE           = "https://www.cyberphoto.se"
+
+# Märken som Cyberphoto utelämnar ur produkttitlar
+_BRANDS = frozenset({
+    "canon", "nikon", "sony", "fujifilm", "fuji", "olympus", "panasonic",
+    "leica", "sigma", "tamron", "tokina", "samyang", "zeiss", "pentax",
+    "minolta", "ricoh", "hasselblad",
+})
+# Ord som aldrig krävs i Cyberphotos titlar
+_SKIP = MOUNT_WORDS | _BRANDS
 
 HEADERS = {
     "User-Agent":    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -49,7 +59,7 @@ def search(query: str, max_price: Optional[int] = None,
             continue
 
         title = rec.get("name", "").strip()
-        if not title:
+        if not title or not _cp_matches(title, query):
             continue
 
         url = rec.get("url", "")
@@ -80,9 +90,14 @@ def search(query: str, max_price: Optional[int] = None,
     return results
 
 
-def _matches(title: str, query: str) -> bool:
-    def normalize(s: str) -> str:
+def _cp_matches(title: str, query: str) -> bool:
+    """Cyberphoto-specifik: kräver modellsiffror/-namn men ignorerar
+    märkesnamn (canon, sony …) och fästebeteckningar (ef, rf, fe …)
+    eftersom Cyberphoto utelämnar dessa i produkttitlar."""
+    def norm(s: str) -> str:
         return re.sub(r"[^a-z0-9]", " ", s.lower())
-    title_norm  = normalize(title)
-    query_words = [w for w in normalize(query).split() if len(w) > 1]
-    return all(w in title_norm for w in query_words)
+    title_n  = norm(title)
+    required = [w for w in norm(query).split() if len(w) > 1 and w not in _SKIP]
+    if not required:
+        return True
+    return all(w in title_n for w in required)
