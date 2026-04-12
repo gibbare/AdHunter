@@ -1,10 +1,12 @@
 """
-Scandinavian Photo scraper – scandinavianphoto.se/second-hand / begagnat
+Scandinavian Photo scraper – /begagnat?pageSize=200
+Produktkort: .sp-product-card, titel från img[alt], pris från [class*='price'].
+Söktermen filtrerar inte på serversidan → _matches() filtrerar lokalt.
 """
+import re
 import requests
 from bs4 import BeautifulSoup
 from typing import Optional
-import re
 
 BASE = "https://www.scandinavianphoto.se"
 HEADERS = {
@@ -14,11 +16,11 @@ HEADERS = {
 }
 
 
-def search(query: str, max_price: Optional[int] = None, min_price: Optional[int] = None) -> list[dict]:
-    # Prova söksidan först
-    url = f"{BASE}/search?query={requests.utils.quote(query)}&second_hand=1"
+def search(query: str, max_price: Optional[int] = None,
+           min_price: Optional[int] = None) -> list[dict]:
+    url = f"{BASE}/begagnat"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
+        resp = requests.get(url, params={"pageSize": 200}, headers=HEADERS, timeout=20)
         resp.raise_for_status()
     except Exception as e:
         print(f"[ScandinavianPhoto] Fel vid hämtning: {e}")
@@ -27,22 +29,32 @@ def search(query: str, max_price: Optional[int] = None, min_price: Optional[int]
     soup = BeautifulSoup(resp.text, "html.parser")
     results = []
 
-    for card in soup.select(".product-card, .product-item, article.product, li.item"):
-        title_el = card.select_one("h2, h3, .product-name, .product-title, a[title]")
+    for card in soup.select(".sp-product-card"):
+        img      = card.select_one("img[alt]")
         link_el  = card.select_one("a[href]")
-        price_el = card.select_one(".price, .product-price, [class*='price']")
+        price_el = card.select_one("[class*='price']")
 
-        if not (title_el and link_el):
+        if not img or not link_el:
             continue
 
-        title = title_el.get_text(strip=True)
+        title = img.get("alt", "").strip()
+        if not title or not _matches(title, query):
+            continue
+
         href  = link_el["href"]
         url_  = href if href.startswith("http") else BASE + href
-        price = price_el.get_text(strip=True) if price_el else ""
+        price = price_el.get_text(strip=True).replace("\xa0", " ") if price_el else ""
         pid   = re.sub(r"[^a-z0-9]", "_", url_.lower())[-60:]
 
-        if not _matches(title, query):
-            continue
+        # Prisfilter
+        try:
+            price_num = float(re.sub(r"[^\d]", "", price.split("SEK")[0].replace(" ", "")))
+            if max_price and price_num > max_price:
+                continue
+            if min_price and price_num < min_price:
+                continue
+        except (ValueError, TypeError):
+            pass
 
         results.append({
             "id":    f"sp_{pid}",
@@ -57,6 +69,8 @@ def search(query: str, max_price: Optional[int] = None, min_price: Optional[int]
 
 
 def _matches(title: str, query: str) -> bool:
-    words = query.lower().split()
-    t = title.lower()
-    return all(w in t for w in words)
+    def normalize(s: str) -> str:
+        return re.sub(r"[^a-z0-9]", " ", s.lower())
+    title_norm  = normalize(title)
+    query_words = [w for w in normalize(query).split() if len(w) > 1]
+    return all(w in title_norm for w in query_words)
