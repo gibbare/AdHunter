@@ -7,6 +7,7 @@ import json
 import re
 import requests
 from typing import Optional
+from scrapers._match import matches as _matches
 
 BASE = "https://www.blocket.se"
 SEARCH_URL = f"{BASE}/recommerce/forsale/search"
@@ -27,15 +28,6 @@ def _sanitize_query(query: str) -> str:
     # Komprimera extra mellanslag
     return re.sub(r'\s+', ' ', q).strip()
 
-
-def _matches(title: str, query: str) -> bool:
-    """Kontrollera att alla ord i söktermen (>1 tecken) finns i titeln."""
-    def normalize(s: str) -> str:
-        return re.sub(r"[^a-z0-9]", " ", s.lower())
-
-    title_norm  = normalize(title)
-    query_words = [w for w in normalize(query).split() if len(w) > 1]
-    return all(w in title_norm for w in query_words)
 
 
 def search(query: str, max_price: Optional[int] = None,

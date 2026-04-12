@@ -7,6 +7,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from typing import Optional
+from scrapers._match import matches as _matches
 
 BASE = "https://www.scandinavianphoto.se"
 HEADERS = {
@@ -68,9 +69,3 @@ def search(query: str, max_price: Optional[int] = None,
     return results
 
 
-def _matches(title: str, query: str) -> bool:
-    def normalize(s: str) -> str:
-        return re.sub(r"[^a-z0-9]", " ", s.lower())
-    title_norm  = normalize(title)
-    query_words = [w for w in normalize(query).split() if len(w) > 1]
-    return all(w in title_norm for w in query_words)

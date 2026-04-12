@@ -8,6 +8,7 @@ OBS: API:et returnerar XML, inte JSON.
 import requests
 import xml.etree.ElementTree as ET
 from typing import Optional
+from scrapers._match import matches as _matches
 
 KLEVU_API    = "https://eucs31.ksearchnet.com/cloud-search/n-search/search"
 KLEVU_TICKET = "klevu-166912949174715814"
@@ -96,14 +97,3 @@ def search(query: str, max_price: Optional[int] = None,
     return results
 
 
-def _matches(title: str, query: str) -> bool:
-    """Kontrollerar att alla signifikanta ord i söktermen finns i produktnamnet.
-    Normaliserar bort specialtecken (t.ex. 'f/4' → 'f 4') innan jämförelse.
-    """
-    import re
-    def normalize(s):
-        return re.sub(r"[^a-z0-9]", " ", s.lower())
-
-    title_norm = normalize(title)
-    query_words = [w for w in normalize(query).split() if len(w) > 1]
-    return all(w in title_norm for w in query_words)
