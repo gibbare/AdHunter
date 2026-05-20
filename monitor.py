@@ -55,8 +55,8 @@ def load_config() -> dict:
             )
             if resp.status_code == 200:
                 remote = resp.json()
-                # Only override if there are terms defined remotely
-                if remote.get("terms"):
+                # Override if the Worker has a terms key (even if empty)
+                if remote.get("terms") is not None:
                     cfg["search_terms"] = [
                         t["query"] for t in remote["terms"] if t.get("active", True)
                     ]
